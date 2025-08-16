@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubscriptionPackage extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'name',
         'slug',
@@ -62,9 +64,35 @@ class SubscriptionPackage extends Model
             return true;
         }
 
-        // Sort order'a göre upgrade kontrolü (düşük sort_order = yüksek tier)
+        // Same package check
+        if ($this->id === $currentPackage->id) {
+            return false;
+        }
+
+        // Sort order'a göre upgrade kontrolü (yüksek sort_order = yüksek tier)
+        // Free(1) -> Professional(2) -> Enterprise(3)
         if ($this->sort_order === $currentPackage->sort_order) {
             return $this->monthly_price > $currentPackage->monthly_price;
+        }
+        
+        return $this->sort_order > $currentPackage->sort_order;
+    }
+
+    public function canDowngradeFrom($currentPackage): bool
+    {
+        if (!$currentPackage) {
+            return false;
+        }
+
+        // Same package check
+        if ($this->id === $currentPackage->id) {
+            return false;
+        }
+
+        // Sort order'a göre downgrade kontrolü (düşük sort_order = düşük tier)
+        // Enterprise(3) -> Professional(2) -> Free(1)
+        if ($this->sort_order === $currentPackage->sort_order) {
+            return $this->monthly_price < $currentPackage->monthly_price;
         }
         
         return $this->sort_order < $currentPackage->sort_order;
@@ -73,5 +101,22 @@ class SubscriptionPackage extends Model
     public function isCurrentPackage($currentPackage): bool
     {
         return $currentPackage && $this->id === $currentPackage->id;
+    }
+
+    public function getChangeTypeFrom($currentPackage): string
+    {
+        if (!$currentPackage || $this->id === $currentPackage->id) {
+            return 'current';
+        }
+
+        if ($this->canUpgradeFrom($currentPackage)) {
+            return 'upgrade';
+        }
+
+        if ($this->canDowngradeFrom($currentPackage)) {
+            return 'downgrade';
+        }
+
+        return 'unavailable';
     }
 }

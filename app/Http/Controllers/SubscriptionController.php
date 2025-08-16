@@ -37,10 +37,18 @@ class SubscriptionController extends Controller
                     ->with('info', 'You already have this plan active.');
             }
             
-            // Sadece daha yüksek fiyatlı paketlere upgrade'e izin ver
-            if (!$this->canUpgradeToPackage($currentPackage, $package)) {
+            // Package change kontrolü
+            $changeType = $package->getChangeTypeFrom($currentPackage);
+            
+            if ($changeType === 'unavailable') {
                 return redirect()->route('dashboard')
-                    ->with('error', 'You can only upgrade to a higher-tier plan. To downgrade, please contact support.');
+                    ->with('error', 'This package change is not available.');
+            }
+            
+            // Downgrade'e izin verme (şimdilik)
+            if ($changeType === 'downgrade') {
+                return redirect()->route('dashboard')
+                    ->with('error', 'To downgrade your plan, please contact support.');
             }
             
             // Bu bir upgrade işlemi
@@ -84,10 +92,18 @@ class SubscriptionController extends Controller
                     ->with('info', 'You already have this plan active.');
             }
             
-            // Sadece upgrade'e izin ver
-            if (!$this->canUpgradeToPackage($currentPackage, $package)) {
+            // Package change kontrolü
+            $changeType = $package->getChangeTypeFrom($currentPackage);
+            
+            if ($changeType === 'unavailable') {
                 return redirect()->route('dashboard')
-                    ->with('error', 'You can only upgrade to a higher-tier plan. To downgrade, please contact support.');
+                    ->with('error', 'This package change is not available.');
+            }
+            
+            // Downgrade'e izin verme (şimdilik)
+            if ($changeType === 'downgrade') {
+                return redirect()->route('dashboard')
+                    ->with('error', 'To downgrade your plan, please contact support.');
             }
             
             // Mevcut subscription'ı sonlandır
@@ -182,14 +198,4 @@ class SubscriptionController extends Controller
         ]);
     }
     
-    protected function canUpgradeToPackage($currentPackage, $targetPackage): bool
-    {
-        // Sort order'a göre upgrade kontrolü (düşük sort_order = yüksek tier)
-        // Eğer sort_order aynıysa, fiyata göre kontrol et
-        if ($currentPackage->sort_order === $targetPackage->sort_order) {
-            return $targetPackage->monthly_price > $currentPackage->monthly_price;
-        }
-        
-        return $targetPackage->sort_order < $currentPackage->sort_order;
-    }
 }
