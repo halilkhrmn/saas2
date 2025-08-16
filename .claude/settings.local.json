@@ -14,7 +14,11 @@
       "Bash(mkdir:*)",
       "Bash(vendor/bin/pint:*)",
       "Bash(cp:*)",
-      "Bash(composer:*)"
+      "Bash(composer:*)",
+      "mcp__laravel-boost__database-connections",
+      "mcp__laravel-boost__last-error",
+      "Bash(find:*)",
+      "Bash(touch:*)"
     ],
     "defaultMode": "acceptEdits"
   },
